@@ -7,6 +7,7 @@ import authRoutes from './src/routes/auth.js';
 import profileRoutes from './src/routes/profile.js';
 import schemeRoutes from './src/routes/schemes.js';
 import matchRoutes from './src/routes/match.js';
+import savedRoutes from './src/routes/saved.js';
 import errorHandler from './src/middleware/errorHandler.js';
 
 // Load environment variables
@@ -53,6 +54,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/schemes', schemeRoutes);
 app.use('/api/match', matchRoutes);
+app.use('/api/saved', savedRoutes);
 
 // 404 Handler for undefined routes
 app.use((req, res, next) => {
