@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import connectDB from './src/config/db.js';
 import authRoutes from './src/routes/auth.js';
 import profileRoutes from './src/routes/profile.js';
+import schemeRoutes from './src/routes/schemes.js';
 import errorHandler from './src/middleware/errorHandler.js';
 
 // Load environment variables
@@ -49,6 +50,7 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/schemes', schemeRoutes);
 
 // 404 Handler for undefined routes
 app.use((req, res, next) => {
