@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
 import Scheme from '../models/Scheme.js';
 import SchemeVersionHistory from '../models/SchemeVersionHistory.js';
+import PendingScheme from '../models/PendingScheme.js';
 import {
   scrapeSchemeUrl,
   batchScrape,
   isValidUrl
 } from '../services/schemeScraper.js';
+import { parseSchemeWithGemini } from '../services/schemeParser.js';
 
 /**
  * @desc    Get all schemes (including inactive) with admin filters
@@ -272,13 +274,13 @@ export const getSchemeHistory = async (req, res, next) => {
 };
 
 /**
- * @desc    Fetch and scrape raw content from a government scheme URL
+ * @desc    Fetch, parse, and queue scheme for review (Scrape -> Gemini Parse -> PendingScheme)
  * @route   POST /api/admin/fetch-url
  * @access  Private (Admin only)
  */
 export const fetchUrl = async (req, res, next) => {
   try {
-    const { url, urls } = req.body;
+    const { url, urls, autoQueue = true } = req.body;
 
     // Batch mode
     if (Array.isArray(urls) && urls.length > 0) {
@@ -305,17 +307,298 @@ export const fetchUrl = async (req, res, next) => {
       });
     }
 
+    // 1. Scrape raw content
     const scrapedData = await scrapeSchemeUrl(url);
+
+    // 2. Parse using Gemini AI (with fallback if key not set or during tests)
+    let parsedScheme = null;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+      try {
+        parsedScheme = await parseSchemeWithGemini(scrapedData);
+      } catch (aiError) {
+        console.warn('Gemini extraction notice:', aiError.message);
+      }
+    }
+
+    // Fallback basic structural extraction if Gemini key not set
+    if (!parsedScheme) {
+      parsedScheme = {
+        name: scrapedData.title || 'Government Scheme',
+        nameHi: null,
+        sponsoringBody: 'Government of India',
+        level: 'central',
+        state: null,
+        description:
+          scrapedData.metaDescription ||
+          scrapedData.cleanText.substring(0, 300) ||
+          'Government scheme overview.',
+        descriptionHi: null,
+        eligibilityRules: [],
+        benefits: {
+          type: 'composite',
+          description: 'Financial assistance and support under the scheme.'
+        },
+        documentsRequired: [],
+        applicationLink:
+          scrapedData.meta?.externalLinks?.[0]?.url || null,
+        sourceUrl: url
+      };
+    }
+
+    // 3. Save into PendingScheme review queue
+    let pendingScheme = null;
+    if (autoQueue) {
+      pendingScheme = await PendingScheme.create({
+        ...parsedScheme,
+        status: 'pending',
+        rawScrapedContent: {
+          title: scrapedData.title,
+          cleanText: scrapedData.cleanText.substring(0, 5000),
+          scrapedAt: scrapedData.scrapedAt
+        }
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Content fetched successfully from URL.',
-      data: scrapedData
+      message: 'Scheme content fetched, parsed, and added to pending review queue.',
+      scrapedData,
+      parsedScheme,
+      pendingScheme
     });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: error.message
     });
+  }
+};
+
+/**
+ * @desc    Get all pending schemes in the review queue
+ * @route   GET /api/admin/pending
+ * @access  Private (Admin only)
+ */
+export const getPendingSchemes = async (req, res, next) => {
+  try {
+    const { status = 'pending' } = req.query;
+
+    const query = {};
+    if (status !== 'all') {
+      query.status = status;
+    }
+
+    const pendingSchemes = await PendingScheme.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: pendingSchemes.length,
+      pendingSchemes
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get a single pending scheme by ID
+ * @route   GET /api/admin/pending/:id
+ * @access  Private (Admin only)
+ */
+export const getPendingSchemeById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pending scheme ID format.'
+      });
+    }
+
+    const pendingScheme = await PendingScheme.findById(id).lean();
+
+    if (!pendingScheme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending scheme not found.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      pendingScheme
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Update/edit a pending scheme during admin review
+ * @route   PUT /api/admin/pending/:id
+ * @access  Private (Admin only)
+ */
+export const updatePendingScheme = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pending scheme ID format.'
+      });
+    }
+
+    const pendingScheme = await PendingScheme.findById(id);
+
+    if (!pendingScheme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending scheme not found.'
+      });
+    }
+
+    const allowedUpdates = [
+      'name',
+      'nameHi',
+      'sponsoringBody',
+      'level',
+      'state',
+      'description',
+      'descriptionHi',
+      'eligibilityRules',
+      'benefits',
+      'documentsRequired',
+      'applicationLink',
+      'sourceUrl',
+      'reviewNotes'
+    ];
+
+    allowedUpdates.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        pendingScheme[field] = req.body[field];
+      }
+    });
+
+    if (pendingScheme.level === 'central') {
+      pendingScheme.state = null;
+    }
+
+    await pendingScheme.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Pending scheme updated successfully.',
+      pendingScheme
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Approve a pending scheme -> publishes to active Scheme collection
+ * @route   POST /api/admin/pending/:id/approve
+ * @access  Private (Admin only)
+ */
+export const approvePendingScheme = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pending scheme ID format.'
+      });
+    }
+
+    const pendingScheme = await PendingScheme.findById(id);
+
+    if (!pendingScheme) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending scheme not found.'
+      });
+    }
+
+    if (pendingScheme.status === 'approved') {
+      return res.status(400).json({
+        success: false,
+        message: 'This pending scheme has already been approved.'
+      });
+    }
+
+    // 1. Create the active verified scheme
+    const scheme = await Scheme.create({
+      name: pendingScheme.name,
+      nameHi: pendingScheme.nameHi,
+      sponsoringBody: pendingScheme.sponsoringBody,
+      level: pendingScheme.level,
+      state: pendingScheme.level === 'central' ? null : pendingScheme.state,
+      description: pendingScheme.description,
+      descriptionHi: pendingScheme.descriptionHi,
+      eligibilityRules: pendingScheme.eligibilityRules,
+      benefits: pendingScheme.benefits,
+      documentsRequired: pendingScheme.documentsRequired,
+      applicationLink: pendingScheme.applicationLink,
+      sourceUrl: pendingScheme.sourceUrl,
+      isActive: true,
+      version: 1
+    });
+
+    // 2. Update pending scheme record
+    pendingScheme.status = 'approved';
+    pendingScheme.approvedScheme = scheme._id;
+    pendingScheme.reviewedBy = req.user ? req.user._id : null;
+    pendingScheme.reviewedAt = new Date();
+    await pendingScheme.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Scheme approved and published to active corpus.',
+      scheme,
+      pendingScheme
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Reject or delete a pending scheme
+ * @route   DELETE /api/admin/pending/:id
+ * @access  Private (Admin only)
+ */
+export const deletePendingScheme = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pending scheme ID format.'
+      });
+    }
+
+    const deleted = await PendingScheme.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending scheme not found.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Pending scheme discarded.'
+    });
+  } catch (error) {
+    next(error);
   }
 };
