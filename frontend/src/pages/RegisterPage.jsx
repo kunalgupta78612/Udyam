@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Phone, MapPin, ArrowRight, ShieldCheck } from 'lucide-react';
-import MeshSphereScene from '../components/3d/MeshSphereScene';
+import { 
+  User, 
+  Mail, 
+  Lock, 
+  Phone, 
+  MapPin, 
+  ArrowRight, 
+  ShieldCheck, 
+  Sparkles, 
+  Building2, 
+  CheckCircle2, 
+  Rocket 
+} from 'lucide-react';
+import SignupGrowth3DScene from '../components/3d/SignupGrowth3DScene';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
@@ -20,10 +32,11 @@ export default function RegisterPage() {
     name: '',
     email: '',
     phone: '',
-    state: '',
+    state: 'Maharashtra',
     password: '',
     confirmPassword: '',
     role: 'citizen',
+    entityType: 'proprietorship',
   });
 
   const [errors, setErrors] = useState({});
@@ -45,6 +58,20 @@ export default function RegisterPage() {
     if (strength <= 50) return 'var(--color-warning)';
     if (strength <= 75) return 'var(--color-accent)';
     return 'var(--color-success)';
+  };
+
+  const handleQuickDemo = () => {
+    setFormData({
+      name: 'Ramesh Kumar',
+      email: 'ramesh.kumar@udyam.in',
+      phone: '+91 98765 43210',
+      state: 'Maharashtra',
+      password: 'SecurePassword2026!',
+      confirmPassword: 'SecurePassword2026!',
+      role: 'citizen',
+      entityType: 'proprietorship',
+    });
+    showToast('Demo enterprise registration data auto-filled!', 'info');
   };
 
   const handleSubmit = async (e) => {
@@ -77,56 +104,117 @@ export default function RegisterPage() {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
         minHeight: 'calc(100vh - 12rem)',
         alignItems: 'center',
-        gap: '3rem',
-        padding: '2rem 0',
+        gap: '3.5rem',
+        padding: '2.5rem 0 4rem',
+        maxWidth: '1200px',
+        margin: '0 auto',
       }}
     >
-      {/* Left 3D scene */}
+      {/* Left 3D Growth Scene */}
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          position: 'relative',
         }}
       >
-        <div style={{ width: '100%', maxWidth: '400px', height: '360px' }}>
-          <MeshSphereScene />
+        <div style={{ width: '100%', maxWidth: '440px', height: '380px', position: 'relative' }}>
+          <SignupGrowth3DScene height="380px" strengthLevel={strength} />
+          <div
+            style={{
+              textAlign: 'center',
+              marginTop: '-1rem',
+              fontSize: '0.75rem',
+              color: 'var(--color-text-muted)',
+              fontWeight: 600,
+            }}
+          >
+            Rotate 3D Growth Rocket & Orbiting Subsidy Coins
+          </div>
         </div>
-        <div style={{ textAlign: 'center', maxWidth: '380px', marginTop: '1rem' }}>
-          <Badge variant="success" pill size="sm">
-            Government of India Aligned
-          </Badge>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-text)', margin: '0.4rem 0 0.5rem' }}>
-            Get Matched to ₹48,000+ Cr in Subsidies
+
+        <div style={{ textAlign: 'center', maxWidth: '420px', marginTop: '1.25rem' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+            <Badge variant="success" pill size="sm">
+              <Rocket size={14} /> Empowering Indian MSMEs & Startups
+            </Badge>
+          </div>
+          <h3 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-text)', margin: '0.2rem 0 0.5rem', lineHeight: 1.25 }}>
+            Launch Your Enterprise with Verified Capital Grants
           </h3>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-            Create your entrepreneur profile once. We continuously track new scheme circulars and notify you instantly.
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', lineHeight: 1.55 }}>
+            Register once to generate your verified MSME profile. Our AI engine scans 1,450+ central & state circulars to notify you whenever subsidies match.
           </p>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '1rem',
+              marginTop: '1.25rem',
+              fontSize: '0.75rem',
+              color: 'var(--color-text-muted)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={14} color="var(--color-success)" /> 100% Free Forever
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={14} color="var(--color-success)" /> Zero Spam / Ads
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <CheckCircle2 size={14} color="var(--color-success)" /> Gazette Rule Aligned
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Right Form */}
-      <div style={{ maxWidth: '500px', margin: '0 auto', width: '100%' }}>
+      {/* Right Form Card */}
+      <div style={{ maxWidth: '520px', margin: '0 auto', width: '100%' }}>
         <Card
           variant="glass"
+          tiltEffect
+          glare
           style={{
-            padding: '2.5rem 2rem',
+            padding: '2.5rem 2.25rem',
             borderRadius: 'var(--radius-2xl)',
             boxShadow: 'var(--shadow-xl)',
-            border: '1px solid rgba(255, 255, 255, 0.8)',
+            border: '1px solid rgba(255, 255, 255, 0.85)',
           }}
         >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
-              Create Account
-            </h2>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: '0.35rem 0 0 0' }}>
-              Free registration for businesses, self-employed, and students.
-            </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text)', margin: 0 }}>
+                Create Account
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: '0.25rem 0 0 0' }}>
+                Join 2.8M entrepreneurs finding government grants.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleQuickDemo}
+              style={{
+                background: 'var(--color-primary-50)',
+                border: '1px solid var(--color-primary-100)',
+                borderRadius: 'var(--radius-md)',
+                padding: '0.35rem 0.65rem',
+                fontSize: '0.75rem',
+                color: 'var(--color-primary)',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              ⚡ Fill Demo
+            </button>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -163,8 +251,7 @@ export default function RegisterPage() {
             </div>
 
             <Select
-              label="State / Union Territory"
-              placeholder="Select your operational state"
+              label="Operational State / Union Territory"
               value={formData.state}
               onChange={(e) => setFormData({ ...formData, state: e.target.value })}
               options={INDIAN_STATES.map((s) => ({ value: s, label: s }))}
@@ -181,10 +268,10 @@ export default function RegisterPage() {
               required
             />
 
-            {/* Password strength bar */}
+            {/* Password strength bar synced with 3D scene */}
             {formData.password && (
-              <div style={{ marginBottom: '1rem', marginTop: '-0.5rem' }}>
-                <div style={{ height: '4px', width: '100%', backgroundColor: 'var(--color-border)', borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ marginBottom: '1.25rem', marginTop: '-0.5rem' }}>
+                <div style={{ height: '5px', width: '100%', backgroundColor: 'var(--color-border)', borderRadius: '3px', overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
@@ -194,10 +281,10 @@ export default function RegisterPage() {
                     }}
                   />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '0.25rem', color: 'var(--color-text-muted)' }}>
-                  <span>Password strength</span>
-                  <span style={{ color: getStrengthColor(), fontWeight: 600 }}>
-                    {strength <= 25 ? 'Weak' : strength <= 50 ? 'Fair' : strength <= 75 ? 'Good' : 'Strong'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '0.35rem', color: 'var(--color-text-muted)' }}>
+                  <span>3D Thruster Reactivity:</span>
+                  <span style={{ color: getStrengthColor(), fontWeight: 700 }}>
+                    {strength <= 25 ? 'Low (Red)' : strength <= 50 ? 'Fair (Amber)' : strength <= 75 ? 'Good (Saffron)' : 'Optimal Security (Emerald)'}
                   </span>
                 </div>
               </div>
@@ -222,16 +309,19 @@ export default function RegisterPage() {
               loading={registerMutation.isPending}
               icon={ArrowRight}
               iconPosition="right"
-              style={{ marginTop: '0.5rem' }}
+              style={{
+                marginTop: '0.5rem',
+                boxShadow: '0 8px 20px rgba(255, 111, 0, 0.35)',
+              }}
             >
-              Create Account & Find Schemes
+              Create Account & Launch Intake
             </Button>
           </form>
 
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-            Already have an account?{' '}
+            Already registered?{' '}
             <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 700, textDecoration: 'none' }}>
-              Log In
+              Sign In Here
             </Link>
           </div>
         </Card>
