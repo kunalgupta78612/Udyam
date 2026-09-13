@@ -1,3 +1,4 @@
+
 import User from '../models/User.js';
 
 /**
@@ -24,6 +25,14 @@ export const register = async (req, res, next) => {
       });
     }
 
+    // Validate role if provided
+    if (role && !['user', 'admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified. Allowed roles are: user, admin.'
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
@@ -38,7 +47,7 @@ export const register = async (req, res, next) => {
       name,
       email: email.toLowerCase(),
       password,
-      role: role && ['user', 'admin'].includes(role) ? role : 'user'
+      role: role || 'user'
     });
 
     // Generate JWT token
@@ -68,13 +77,21 @@ export const register = async (req, res, next) => {
  */
 export const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // Validate email & password
     if (!email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide both email and password.'
+      });
+    }
+
+    // Validate role if provided
+    if (role && !['user', 'admin'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role specified. Allowed roles are: user, admin.'
       });
     }
 
@@ -94,6 +111,14 @@ export const login = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password.'
+      });
+    }
+
+    // Check if selected role matches user's actual role
+    if (role && user.role !== role) {
+      return res.status(401).json({
+        success: false,
+        message: `Role mismatch. The selected role '${role}' does not match your account role.`
       });
     }
 

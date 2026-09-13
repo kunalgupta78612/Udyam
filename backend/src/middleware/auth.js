@@ -56,3 +56,16 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+/**
+ * Middleware to restrict access to admin users only
+ */
+export const adminOnly = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin resources require an admin role.'
+    });
+  }
+  next();
+};
