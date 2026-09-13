@@ -24,7 +24,7 @@ import { useToast } from '../components/ui/Toast';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loginMutation } = useAuth();
+  const { login, isLoginLoading, loginMutation } = useAuth();
   const { showToast } = useToast();
 
   const [authMethod, setAuthMethod] = useState('password'); // 'password' | 'otp'
@@ -392,7 +392,7 @@ export default function LoginPage() {
               variant="accent"
               fullWidth
               size="lg"
-              loading={loginMutation.isPending}
+              loading={isLoginLoading || !!loginMutation?.isPending}
               icon={ArrowRight}
               iconPosition="right"
               style={{

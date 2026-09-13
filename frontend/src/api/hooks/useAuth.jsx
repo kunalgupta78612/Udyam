@@ -51,6 +51,8 @@ export function AuthProvider({ children }) {
       isAdmin: user?.role === 'admin',
       login: loginMutation.mutateAsync,
       register: registerMutation.mutateAsync,
+      loginMutation,
+      registerMutation,
       logout,
       loginError: loginMutation.error,
       registerError: registerMutation.error,

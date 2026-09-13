@@ -25,7 +25,7 @@ import { INDIAN_STATES } from '../utils/constants';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register, registerMutation } = useAuth();
+  const { register, isRegisterLoading, registerMutation } = useAuth();
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -306,7 +306,7 @@ export default function RegisterPage() {
               variant="accent"
               fullWidth
               size="lg"
-              loading={registerMutation.isPending}
+              loading={isRegisterLoading || !!registerMutation?.isPending}
               icon={ArrowRight}
               iconPosition="right"
               style={{
