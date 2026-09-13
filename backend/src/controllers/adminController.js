@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import Scheme from '../models/Scheme.js';
 import SchemeVersionHistory from '../models/SchemeVersionHistory.js';
+import {
+  scrapeSchemeUrl,
+  batchScrape,
+  isValidUrl
+} from '../services/schemeScraper.js';
 
 /**
  * @desc    Get all schemes (including inactive) with admin filters
@@ -263,5 +268,54 @@ export const getSchemeHistory = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * @desc    Fetch and scrape raw content from a government scheme URL
+ * @route   POST /api/admin/fetch-url
+ * @access  Private (Admin only)
+ */
+export const fetchUrl = async (req, res, next) => {
+  try {
+    const { url, urls } = req.body;
+
+    // Batch mode
+    if (Array.isArray(urls) && urls.length > 0) {
+      const batchResults = await batchScrape(urls);
+      return res.status(200).json({
+        success: true,
+        message: `Scraped ${batchResults.length} URLs.`,
+        data: batchResults
+      });
+    }
+
+    // Single URL mode
+    if (!url) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a target url in the request body.'
+      });
+    }
+
+    if (!isValidUrl(url)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid URL format. Must start with http:// or https://.'
+      });
+    }
+
+    const scrapedData = await scrapeSchemeUrl(url);
+
+    res.status(200).json({
+      success: true,
+      message: 'Content fetched successfully from URL.',
+      data: scrapedData
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
   }
 };
