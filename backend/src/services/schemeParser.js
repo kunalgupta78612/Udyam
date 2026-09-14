@@ -249,7 +249,7 @@ export const parseSchemeWithGemini = async (scrapedData, options = {}) => {
     throw new Error('Scraped content text or HTML is required for AI parsing.');
   }
 
-  const modelName = options.model || process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  const modelName = options.model || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
   const genAI = new GoogleGenerativeAI(apiKey);
 
   const model = genAI.getGenerativeModel({
