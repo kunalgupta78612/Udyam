@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -25,8 +25,14 @@ import { INDIAN_STATES } from '../utils/constants';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register, isRegisterLoading, registerMutation } = useAuth();
+  const { register, isRegisterLoading, user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(user?.role === 'admin' ? '/admin' : '/profile', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -98,9 +104,10 @@ export default function RegisterPage() {
         password: formData.password,
         role: formData.role === 'citizen' ? 'user' : (formData.role || 'user'),
       };
-      await register(payload);
-      showToast('Registration successful! Redirecting to eligibility test...', 'success');
-      navigate('/intake');
+      const res = await register(payload);
+      const userRole = res?.user?.role || payload.role;
+      showToast('Registration successful! Welcome to Udyam.AI', 'success');
+      navigate(userRole === 'admin' ? '/admin' : '/profile', { replace: true });
     } catch (err) {
       showToast(err.message || 'Registration failed', 'error');
     }

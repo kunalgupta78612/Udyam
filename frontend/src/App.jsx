@@ -15,7 +15,9 @@ import IntakeWizard from './pages/IntakeWizard';
 import ResultsPage from './pages/ResultsPage';
 import TrackerPage from './pages/TrackerPage';
 import AdminPage from './pages/AdminPage';
+import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 export default function App() {
   return (
@@ -32,7 +34,22 @@ export default function App() {
                   <Route path="/intake" element={<IntakeWizard />} />
                   <Route path="/results" element={<ResultsPage />} />
                   <Route path="/tracker" element={<TrackerPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute adminOnly>
+                        <AdminPage />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Layout>

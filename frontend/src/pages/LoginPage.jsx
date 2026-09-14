@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Mail, 
@@ -24,7 +24,7 @@ import { useToast } from '../components/ui/Toast';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoginLoading, loginMutation } = useAuth();
+  const { login, isLoginLoading, user, isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
   const [authMethod, setAuthMethod] = useState('password'); // 'password' | 'otp'
@@ -35,7 +35,12 @@ export default function LoginPage() {
   const [role, setRole] = useState('citizen'); // 'citizen' | 'admin'
   const [errors, setErrors] = useState({});
 
-  const from = location.state?.from?.pathname || (role === 'admin' ? '/admin' : '/intake');
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const redirectTarget = location.state?.from?.pathname || (user?.role === 'admin' ? '/admin' : '/profile');
+      navigate(redirectTarget, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, location]);
 
   const handleQuickFill = (targetRole) => {
     if (targetRole === 'citizen') {
@@ -79,9 +84,11 @@ export default function LoginPage() {
     }
 
     try {
-      await login(email, password, role);
-      showToast(`Welcome back to Udyam.AI (${role === 'admin' ? 'Ministry Admin' : 'Citizen'})!`, 'success');
-      navigate(from, { replace: true });
+      const res = await login(email.trim(), password, role);
+      const userRole = res?.user?.role || (role === 'admin' ? 'admin' : 'user');
+      const destination = location.state?.from?.pathname || (userRole === 'admin' ? '/admin' : '/profile');
+      showToast(`Welcome back to Udyam.AI (${userRole === 'admin' ? 'Ministry Admin' : 'Citizen'})!`, 'success');
+      navigate(destination, { replace: true });
     } catch (err) {
       showToast(err.message || 'Login failed', 'error');
     }

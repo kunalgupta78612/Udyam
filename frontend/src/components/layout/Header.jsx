@@ -219,7 +219,7 @@ export default function Header() {
               <button
                 onClick={() => {
                   logout();
-                  navigate('/');
+                  navigate('/login');
                 }}
                 title="Logout"
                 style={{
@@ -306,6 +306,67 @@ export default function Header() {
               )}
             </Link>
           ))}
+
+          {/* Mobile Auth actions */}
+          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--color-border)' }}>
+            {isAuthenticated ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'var(--color-primary-50)',
+                    color: 'var(--color-primary)',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                  }}
+                >
+                  <User size={16} />
+                  <span>{user?.name || 'My Profile'}</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                    navigate('/login');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.65rem 0.75rem',
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-muted)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, textDecoration: 'none' }}>
+                  <Button variant="ghost" size="sm" style={{ width: '100%' }}>
+                    {t('login') || 'Sign In'}
+                  </Button>
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)} style={{ flex: 1, textDecoration: 'none' }}>
+                  <Button variant="primary" size="sm" style={{ width: '100%' }}>
+                    {t('register') || 'Get Started'}
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
