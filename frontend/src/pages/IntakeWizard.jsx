@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import apiClient from '../api/apiClient';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -53,6 +54,7 @@ export default function IntakeWizard() {
     stage: 'operational_1_to_3',
     socialCategory: 'general',
     gender: 'female',
+    age: 28,
     state: 'Maharashtra',
     district: '',
     areaType: 'rural',
@@ -81,15 +83,52 @@ export default function IntakeWizard() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1);
       window.scrollTo({ top: 120, behavior: 'smooth' });
     } else {
-      // Complete intake
-      sessionStorage.setItem('udyam_intake_profile', JSON.stringify(formData));
-      showToast('Running AI Deterministic Rules Engine...', 'info');
-      navigate('/results');
+      // Transform formData to backend UserProfile field names
+      const stageMap = {
+        idea_stage: 'idea',
+        pre_revenue: 'startup_less_1yr',
+        operational_1_to_3: 'early_1_3yr',
+        established_3_plus: 'established',
+      };
+      const categoryMap = {
+        general: 'General',
+        sc: 'SC',
+        st: 'ST',
+        obc: 'OBC',
+        ews: 'EWS',
+      };
+
+      const backendProfile = {
+        category: categoryMap[formData.socialCategory] || formData.socialCategory,
+        gender: formData.gender,
+        age: Number(formData.age) || 28,
+        annualIncome: Number(formData.investment) || 0,
+        businessStage: stageMap[formData.stage] || formData.stage,
+        sector: formData.sector,
+        state: formData.state,
+        ruralOrUrban: formData.areaType,
+        isPwD: formData.specialCategory === 'pwd',
+        isTransgender: formData.gender === 'other',
+        hasCollateral: false,
+        qualification: null,
+      };
+
+      try {
+        showToast('Saving your profile...', 'info');
+        await apiClient.saveProfile(backendProfile);
+        // Also store locally for offline reference
+        sessionStorage.setItem('udyam_intake_profile', JSON.stringify(backendProfile));
+        showToast('Profile saved! Running Deterministic Rules Engine...', 'success');
+        navigate('/results');
+      } catch (err) {
+        console.error('Profile save error:', err);
+        showToast(err?.message || 'Failed to save profile. Please try again.', 'error');
+      }
     }
   };
 

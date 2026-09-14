@@ -92,7 +92,13 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(formData);
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        role: formData.role === 'citizen' ? 'user' : (formData.role || 'user'),
+      };
+      await register(payload);
       showToast('Registration successful! Redirecting to eligibility test...', 'success');
       navigate('/intake');
     } catch (err) {

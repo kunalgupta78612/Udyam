@@ -9,6 +9,7 @@ import User from '../models/User.js';
 export const register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
+    const normalizedRole = role === 'citizen' ? 'user' : (role || 'user');
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -26,7 +27,7 @@ export const register = async (req, res, next) => {
     }
 
     // Validate role if provided
-    if (role && !['user', 'admin'].includes(role)) {
+    if (normalizedRole && !['user', 'admin'].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid role specified. Allowed roles are: user, admin.'
@@ -47,7 +48,7 @@ export const register = async (req, res, next) => {
       name,
       email: email.toLowerCase(),
       password,
-      role: role || 'user'
+      role: normalizedRole
     });
 
     // Generate JWT token
@@ -78,6 +79,7 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
+    const normalizedRole = role === 'citizen' ? 'user' : role;
 
     // Validate email & password
     if (!email || !password) {
@@ -88,7 +90,7 @@ export const login = async (req, res, next) => {
     }
 
     // Validate role if provided
-    if (role && !['user', 'admin'].includes(role)) {
+    if (normalizedRole && !['user', 'admin'].includes(normalizedRole)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid role specified. Allowed roles are: user, admin.'
@@ -115,7 +117,7 @@ export const login = async (req, res, next) => {
     }
 
     // Check if selected role matches user's actual role
-    if (role && user.role !== role) {
+    if (normalizedRole && user.role !== normalizedRole) {
       return res.status(401).json({
         success: false,
         message: `Role mismatch. The selected role '${role}' does not match your account role.`

@@ -11,21 +11,42 @@ export function AuthProvider({ children }) {
   });
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, isError } = useQuery({
     queryKey: authKeys.user(),
     queryFn: () => apiClient.getMe(),
     enabled: !!token,
     retry: false,
   });
 
+  useEffect(() => {
+    if (isError) {
+      try {
+        localStorage.removeItem('udyam_token');
+      } catch (e) {
+        console.warn('Failed to clear udyam_token:', e);
+      }
+      setToken(null);
+    }
+  }, [isError]);
+
   const loginMutation = useMutation({
-    mutationFn: ({ email, password }) => apiClient.login(email, password),
+    mutationFn: ({ email, password, role }) => apiClient.login(email, password, role),
     onSuccess: (data) => {
       localStorage.setItem('udyam_token', data.token);
       setToken(data.token);
       queryClient.setQueryData(authKeys.user(), data.user);
     },
   });
+
+  const login = useCallback(
+    (emailOrObj, password, role) => {
+      if (typeof emailOrObj === 'object' && emailOrObj !== null) {
+        return loginMutation.mutateAsync(emailOrObj);
+      }
+      return loginMutation.mutateAsync({ email: emailOrObj, password, role });
+    },
+    [loginMutation]
+  );
 
   const registerMutation = useMutation({
     mutationFn: (data) => apiClient.register(data),
@@ -49,7 +70,7 @@ export function AuthProvider({ children }) {
       isLoading,
       isAuthenticated: !!token && !!user,
       isAdmin: user?.role === 'admin',
-      login: loginMutation.mutateAsync,
+      login,
       register: registerMutation.mutateAsync,
       loginMutation,
       registerMutation,
